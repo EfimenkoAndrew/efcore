@@ -1064,6 +1064,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Scaffolding.Internal;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
@@ -1089,11 +1090,12 @@ namespace TestNamespace
                 fieldInfo: typeof(CSharpRuntimeModelCodeGeneratorTest.PrincipalBase).GetField(""<Id>k__BackingField"", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 valueGenerated: ValueGenerated.OnAdd,
                 afterSaveBehavior: PropertySaveBehavior.Throw);
-            var overrides = new SortedDictionary<StoreObjectIdentifier, object>();
+            var overrides = new Dictionary<StoreObjectIdentifier, IRelationalPropertyOverrides>();
             var idPrincipalDerived = new RuntimeRelationalPropertyOverrides(
                 id,
                 true,
-                ""DerivedId"");
+                ""DerivedId"",
+                StoreObjectIdentifier.Table(""PrincipalDerived"", null));
             overrides[StoreObjectIdentifier.Table(""PrincipalDerived"", null)] = idPrincipalDerived;
             id.AddAnnotation(""Relational:RelationalOverrides"", overrides);
             id.AddAnnotation(""SqlServer:ValueGenerationStrategy"", SqlServerValueGenerationStrategy.IdentityColumn);

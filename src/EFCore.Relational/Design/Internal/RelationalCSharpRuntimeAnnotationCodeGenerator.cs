@@ -327,6 +327,25 @@ public class RelationalCSharpRuntimeAnnotationCodeGenerator : CSharpRuntimeAnnot
             annotations[RelationalAnnotationNames.FunctionName] = entityType.GetFunctionName();
 
             if (annotations.TryGetAndRemove(
+                    RelationalAnnotationNames.RelationalOverrides,
+                    out Dictionary<StoreObjectIdentifier, IRelationalEntityTypeOverrides> overrides))
+            {
+                AddNamespace(typeof(Dictionary<StoreObjectIdentifier, IRelationalEntityTypeOverrides>), parameters.Namespaces);
+                AddNamespace(typeof(RuntimeRelationalEntityTypeOverrides), parameters.Namespaces);
+                AddNamespace(typeof(StoreObjectIdentifier), parameters.Namespaces);
+                var overridesVariable = Dependencies.CSharpHelper.Identifier("overrides", parameters.ScopeVariables, capitalize: false);
+                parameters.MainBuilder
+                    .Append("var ").Append(overridesVariable).AppendLine(" = new Dictionary<StoreObjectIdentifier, IRelationalEntityTypeOverrides>();");
+
+                foreach (var (key, value) in overrides.OrderBy(pair => pair.Key.Name, StringComparer.Ordinal))
+                {
+                    Create(value, key, overridesVariable, parameters);
+                }
+
+                GenerateSimpleAnnotation(RelationalAnnotationNames.RelationalOverrides, overridesVariable, parameters);
+            }
+            
+            if (annotations.TryGetAndRemove(
                     RelationalAnnotationNames.Triggers,
                     out SortedDictionary<string, ITrigger> triggers))
             {
@@ -345,6 +364,65 @@ public class RelationalCSharpRuntimeAnnotationCodeGenerator : CSharpRuntimeAnnot
         }
 
         base.Generate(entityType, parameters);
+    }
+    
+    private void Create(
+        IRelationalEntityTypeOverrides overrides,
+        StoreObjectIdentifier storeObject,
+        string overridesVariable,
+        CSharpRuntimeAnnotationCodeGeneratorParameters parameters)
+    {
+        var code = Dependencies.CSharpHelper;
+        var overrideVariable =
+            code.Identifier(parameters.TargetName + Capitalize(storeObject.Name), parameters.ScopeVariables, capitalize: false);
+        var mainBuilder = parameters.MainBuilder;
+        mainBuilder
+            .Append("var ").Append(overrideVariable).AppendLine(" = new RuntimeRelationalEntityTypeOverrides(").IncrementIndent()
+            .Append(parameters.TargetName).AppendLine(",");
+
+        AppendLiteral(storeObject, mainBuilder, code);
+        mainBuilder.AppendLine(");").DecrementIndent();
+
+        CreateAnnotations(
+            overrides,
+            GenerateOverrides,
+            parameters with { TargetName = overrideVariable });
+
+        mainBuilder.Append(overridesVariable).Append("[");
+        AppendLiteral(storeObject, mainBuilder, code);
+
+        mainBuilder
+            .Append("] = ")
+            .Append(overrideVariable).AppendLine(";");
+
+        static void AppendLiteral(StoreObjectIdentifier storeObject, IndentedStringBuilder builder, ICSharpHelper code)
+        {
+            builder.Append("StoreObjectIdentifier.");
+            switch (storeObject.StoreObjectType)
+            {
+                case StoreObjectType.Table:
+                    builder
+                        .Append("Table(").Append(code.Literal(storeObject.Name))
+                        .Append(", ").Append(code.UnknownLiteral(storeObject.Schema)).Append(")");
+                    break;
+                case StoreObjectType.View:
+                    builder
+                        .Append("View(").Append(code.Literal(storeObject.Name))
+                        .Append(", ").Append(code.UnknownLiteral(storeObject.Schema)).Append(")");
+                    break;
+                case StoreObjectType.SqlQuery:
+                    builder
+                        .Append("SqlQuery(").Append(code.Literal(storeObject.Name)).Append(")");
+                    break;
+                case StoreObjectType.Function:
+                    builder
+                        .Append("DbFunction(").Append(code.Literal(storeObject.Name)).Append(")");
+                    break;
+                default:
+                    Check.DebugAssert(false, "Unexpected StoreObjectType: " + storeObject.StoreObjectType);
+                    break;
+            }
+        }
     }
 
     private void Create(ITrigger trigger, string triggersVariable, CSharpRuntimeAnnotationCodeGeneratorParameters parameters)
@@ -410,16 +488,18 @@ public class RelationalCSharpRuntimeAnnotationCodeGenerator : CSharpRuntimeAnnot
 
             if (annotations.TryGetAndRemove(
                     RelationalAnnotationNames.RelationalOverrides,
-                    out SortedDictionary<StoreObjectIdentifier, object> overrides))
+                    out Dictionary<StoreObjectIdentifier, IRelationalPropertyOverrides> overrides))
             {
-                parameters.Namespaces.Add(typeof(SortedDictionary<StoreObjectIdentifier, object>).Namespace!);
+                AddNamespace(typeof(Dictionary<StoreObjectIdentifier, IRelationalPropertyOverrides>), parameters.Namespaces);
+                AddNamespace(typeof(RuntimeRelationalPropertyOverrides), parameters.Namespaces);
+                AddNamespace(typeof(StoreObjectIdentifier), parameters.Namespaces);
                 var overridesVariable = Dependencies.CSharpHelper.Identifier("overrides", parameters.ScopeVariables, capitalize: false);
                 parameters.MainBuilder
-                    .Append("var ").Append(overridesVariable).AppendLine(" = new SortedDictionary<StoreObjectIdentifier, object>();");
+                    .Append("var ").Append(overridesVariable).AppendLine(" = new Dictionary<StoreObjectIdentifier, IRelationalPropertyOverrides>();");
 
-                foreach (var (key, value) in overrides)
+                foreach (var (key, value) in overrides.OrderBy(pair => pair.Key.Name, StringComparer.Ordinal))
                 {
-                    Create((IRelationalPropertyOverrides)value, key, overridesVariable, parameters);
+                    Create(value, key, overridesVariable, parameters);
                 }
 
                 GenerateSimpleAnnotation(RelationalAnnotationNames.RelationalOverrides, overridesVariable, parameters);
@@ -443,40 +523,51 @@ public class RelationalCSharpRuntimeAnnotationCodeGenerator : CSharpRuntimeAnnot
             .Append("var ").Append(overrideVariable).AppendLine(" = new RuntimeRelationalPropertyOverrides(").IncrementIndent()
             .Append(parameters.TargetName).AppendLine(",")
             .Append(code.Literal(overrides.ColumnNameOverridden)).AppendLine(",")
-            .Append(code.UnknownLiteral(overrides.ColumnName)).AppendLine(");").DecrementIndent();
+            .Append(code.UnknownLiteral(overrides.ColumnName)).AppendLine(",");
+
+        AppendLiteral(storeObject, mainBuilder, code);
+        mainBuilder.AppendLine(");").DecrementIndent();
 
         CreateAnnotations(
             overrides,
             GenerateOverrides,
             parameters with { TargetName = overrideVariable });
 
-        mainBuilder.Append(overridesVariable).Append("[StoreObjectIdentifier.");
-
-        switch (storeObject.StoreObjectType)
-        {
-            case StoreObjectType.Table:
-                mainBuilder
-                    .Append("Table(").Append(code.Literal(storeObject.Name))
-                    .Append(", ").Append(code.UnknownLiteral(storeObject.Schema)).Append(")");
-                break;
-            case StoreObjectType.View:
-                mainBuilder
-                    .Append("View(").Append(code.Literal(storeObject.Name))
-                    .Append(", ").Append(code.UnknownLiteral(storeObject.Schema)).Append(")");
-                break;
-            case StoreObjectType.SqlQuery:
-                mainBuilder
-                    .Append("SqlQuery(").Append(code.Literal(storeObject.Name)).Append(")");
-                break;
-            case StoreObjectType.Function:
-                mainBuilder
-                    .Append("DbFunction(").Append(code.Literal(storeObject.Name)).Append(")");
-                break;
-        }
+        mainBuilder.Append(overridesVariable).Append("[");
+        AppendLiteral(storeObject, mainBuilder, code);
 
         mainBuilder
             .Append("] = ")
             .Append(overrideVariable).AppendLine(";");
+
+        static void AppendLiteral(StoreObjectIdentifier storeObject, IndentedStringBuilder builder, ICSharpHelper code)
+        {
+            builder.Append("StoreObjectIdentifier.");
+            switch (storeObject.StoreObjectType)
+            {
+                case StoreObjectType.Table:
+                    builder
+                        .Append("Table(").Append(code.Literal(storeObject.Name))
+                        .Append(", ").Append(code.UnknownLiteral(storeObject.Schema)).Append(")");
+                    break;
+                case StoreObjectType.View:
+                    builder
+                        .Append("View(").Append(code.Literal(storeObject.Name))
+                        .Append(", ").Append(code.UnknownLiteral(storeObject.Schema)).Append(")");
+                    break;
+                case StoreObjectType.SqlQuery:
+                    builder
+                        .Append("SqlQuery(").Append(code.Literal(storeObject.Name)).Append(")");
+                    break;
+                case StoreObjectType.Function:
+                    builder
+                        .Append("DbFunction(").Append(code.Literal(storeObject.Name)).Append(")");
+                    break;
+                default:
+                    Check.DebugAssert(false, "Unexpected StoreObjectType: " + storeObject.StoreObjectType);
+                    break;
+            }
+        }
     }
 
     /// <summary>

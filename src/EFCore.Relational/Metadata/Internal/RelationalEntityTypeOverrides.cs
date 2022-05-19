@@ -9,21 +9,17 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal;
 ///     any release. You should only use it directly in your code with extreme caution and knowing that
 ///     doing so can result in application failures when updating to a new Entity Framework Core release.
 /// </summary>
-public class RelationalPropertyOverrides : ConventionAnnotatable, IRelationalPropertyOverrides
+public class RelationalEntityTypeOverrides : ConventionAnnotatable, IRelationalEntityTypeOverrides
 {
-    private string? _columnName;
-
-    private ConfigurationSource? _columnNameConfigurationSource;
-
     /// <summary>
     ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
     ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
     ///     any release. You should only use it directly in your code with extreme caution and knowing that
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
-    public RelationalPropertyOverrides(IReadOnlyProperty property, in StoreObjectIdentifier storeObject)
+    public RelationalEntityTypeOverrides(IReadOnlyEntityType entityType, in StoreObjectIdentifier storeObject)
     {
-        Property = property;
+        EntityType = entityType;
         StoreObject = storeObject;
     }
 
@@ -33,7 +29,7 @@ public class RelationalPropertyOverrides : ConventionAnnotatable, IRelationalPro
     ///     any release. You should only use it directly in your code with extreme caution and knowing that
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
-    public virtual IReadOnlyProperty Property { get; }
+    public virtual IReadOnlyEntityType EntityType { get; }
 
     /// <summary>
     ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
@@ -50,7 +46,7 @@ public class RelationalPropertyOverrides : ConventionAnnotatable, IRelationalPro
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
     public override bool IsReadOnly
-        => ((Annotatable)Property).IsReadOnly;
+        => ((Annotatable)EntityType).IsReadOnly;
 
     /// <summary>
     ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
@@ -58,56 +54,10 @@ public class RelationalPropertyOverrides : ConventionAnnotatable, IRelationalPro
     ///     any release. You should only use it directly in your code with extreme caution and knowing that
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
-    public virtual string? ColumnName
+    public static IRelationalEntityTypeOverrides? Find(IReadOnlyEntityType entityType, in StoreObjectIdentifier storeObject)
     {
-        get => _columnName;
-        set => SetColumnName(value, ConfigurationSource.Explicit);
-    }
-
-    /// <summary>
-    ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
-    ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
-    ///     any release. You should only use it directly in your code with extreme caution and knowing that
-    ///     doing so can result in application failures when updating to a new Entity Framework Core release.
-    /// </summary>
-    public virtual string? SetColumnName(string? columnName, ConfigurationSource configurationSource)
-    {
-        EnsureMutable();
-
-        _columnName = columnName;
-        _columnNameConfigurationSource = configurationSource.Max(_columnNameConfigurationSource);
-
-        return columnName;
-    }
-
-    /// <summary>
-    ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
-    ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
-    ///     any release. You should only use it directly in your code with extreme caution and knowing that
-    ///     doing so can result in application failures when updating to a new Entity Framework Core release.
-    /// </summary>
-    public virtual bool ColumnNameOverridden
-        => _columnNameConfigurationSource != null;
-
-    /// <summary>
-    ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
-    ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
-    ///     any release. You should only use it directly in your code with extreme caution and knowing that
-    ///     doing so can result in application failures when updating to a new Entity Framework Core release.
-    /// </summary>
-    public virtual ConfigurationSource? GetColumnNameConfigurationSource()
-        => _columnNameConfigurationSource;
-
-    /// <summary>
-    ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
-    ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
-    ///     any release. You should only use it directly in your code with extreme caution and knowing that
-    ///     doing so can result in application failures when updating to a new Entity Framework Core release.
-    /// </summary>
-    public static IRelationalPropertyOverrides? Find(IReadOnlyProperty property, in StoreObjectIdentifier storeObject)
-    {
-        var tableOverrides = (Dictionary<StoreObjectIdentifier, IRelationalPropertyOverrides>?)
-            property[RelationalAnnotationNames.RelationalOverrides];
+        var tableOverrides = (Dictionary<StoreObjectIdentifier, IRelationalEntityTypeOverrides>?)
+            entityType[RelationalAnnotationNames.RelationalOverrides];
         return tableOverrides != null
             && tableOverrides.TryGetValue(storeObject, out var overrides)
                 ? overrides
@@ -120,12 +70,12 @@ public class RelationalPropertyOverrides : ConventionAnnotatable, IRelationalPro
     ///     any release. You should only use it directly in your code with extreme caution and knowing that
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
-    public static IEnumerable<IRelationalPropertyOverrides>? Get(IReadOnlyProperty property)
+    public static IEnumerable<IRelationalEntityTypeOverrides>? Get(IReadOnlyEntityType entityType)
     {
-        var tableOverrides = (Dictionary<StoreObjectIdentifier, IRelationalPropertyOverrides>?)
-            property[RelationalAnnotationNames.RelationalOverrides];
+        var tableOverrides = (Dictionary<StoreObjectIdentifier, IRelationalEntityTypeOverrides>?)
+            entityType[RelationalAnnotationNames.RelationalOverrides];
         return tableOverrides?.OrderBy(pair => pair.Key.Name, StringComparer.Ordinal)
-            .Select(pair => pair.Value);
+            .Select(pair => (IRelationalEntityTypeOverrides)pair.Value);
     }
 
     /// <summary>
@@ -134,25 +84,25 @@ public class RelationalPropertyOverrides : ConventionAnnotatable, IRelationalPro
     ///     any release. You should only use it directly in your code with extreme caution and knowing that
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
-    public static RelationalPropertyOverrides GetOrCreate(
-        IMutableProperty property,
+    public static RelationalEntityTypeOverrides GetOrCreate(
+        IMutableEntityType entityType,
         in StoreObjectIdentifier storeObject)
     {
-        var tableOverrides = (Dictionary<StoreObjectIdentifier, IRelationalPropertyOverrides>?)
-            property[RelationalAnnotationNames.RelationalOverrides];
+        var tableOverrides = (Dictionary<StoreObjectIdentifier, IRelationalEntityTypeOverrides>?)
+            entityType[RelationalAnnotationNames.RelationalOverrides];
         if (tableOverrides == null)
         {
-            tableOverrides = new Dictionary<StoreObjectIdentifier, IRelationalPropertyOverrides>();
-            property[RelationalAnnotationNames.RelationalOverrides] = tableOverrides;
+            tableOverrides = new Dictionary<StoreObjectIdentifier, IRelationalEntityTypeOverrides>();
+            entityType[RelationalAnnotationNames.RelationalOverrides] = tableOverrides;
         }
 
         if (!tableOverrides.TryGetValue(storeObject, out var overrides))
         {
-            overrides = new RelationalPropertyOverrides(property, storeObject);
+            overrides = new RelationalEntityTypeOverrides(entityType, storeObject);
             tableOverrides.Add(storeObject, overrides);
         }
 
-        return (RelationalPropertyOverrides)overrides;
+        return (RelationalEntityTypeOverrides)overrides;
     }
 
     /// <summary>
@@ -161,15 +111,15 @@ public class RelationalPropertyOverrides : ConventionAnnotatable, IRelationalPro
     ///     any release. You should only use it directly in your code with extreme caution and knowing that
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
-    public static RelationalPropertyOverrides GetOrCreate(
-        IConventionProperty property,
+    public static RelationalEntityTypeOverrides GetOrCreate(
+        IConventionEntityType entityType,
         in StoreObjectIdentifier storeObject)
-        => GetOrCreate((IMutableProperty)property, storeObject);
+        => GetOrCreate((IMutableEntityType)entityType, storeObject);
 
     /// <inheritdoc />
-    IProperty IRelationalPropertyOverrides.Property
+    IEntityType IRelationalEntityTypeOverrides.EntityType
     {
         [DebuggerStepThrough]
-        get => (IProperty)Property;
+        get => (IEntityType)EntityType;
     }
 }

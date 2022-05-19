@@ -10,7 +10,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Builders;
 ///     Instances of this class are returned from methods when using the <see cref="ModelBuilder" /> API
 ///     and it is not designed to be directly constructed in your application code.
 /// </summary>
-public class TableBuilder
+public class SplitTableBuilder
 {
     /// <summary>
     ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
@@ -19,27 +19,31 @@ public class TableBuilder
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
     [EntityFrameworkInternal]
-    public TableBuilder(string? name, string? schema, EntityTypeBuilder entityTypeBuilder)
+    public SplitTableBuilder(IRelationalEntityTypeOverrides overrides, EntityTypeBuilder entityTypeBuilder)
     {
-        Name = name;
-        Schema = schema;
+        Check.DebugAssert(overrides.StoreObject.StoreObjectType == StoreObjectType.Table,
+            "StoreObjectType should be Table, not " + overrides.StoreObject.StoreObjectType);
+        Check.DebugAssert(overrides.EntityType == entityTypeBuilder.Metadata,
+            "StoreObjectType should be Table, not " + overrides.StoreObject.StoreObjectType);
+
+        Overrides = overrides;
         EntityTypeBuilder = entityTypeBuilder;
     }
 
     /// <summary>
     ///     The specified table name.
     /// </summary>
-    public virtual string? Name { get; }
+    public virtual string Name => Overrides.StoreObject.Name;
 
     /// <summary>
     ///     The specified table schema.
     /// </summary>
-    public virtual string? Schema { get; }
-
+    public virtual string? Schema => Overrides.StoreObject.Schema;
+    
     /// <summary>
-    ///     The entity type being configured.
+    ///     The table-specific overrides being configured.
     /// </summary>
-    public virtual IMutableEntityType Metadata => EntityTypeBuilder.Metadata;
+    public virtual IRelationalEntityTypeOverrides Overrides { get; }
 
     /// <summary>
     ///     The entity type builder.
@@ -54,9 +58,9 @@ public class TableBuilder
     /// </remarks>
     /// <param name="excluded">A value indicating whether the table should be managed by migrations.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public virtual TableBuilder ExcludeFromMigrations(bool excluded = true)
+    public virtual SplitTableBuilder ExcludeFromMigrations(bool excluded = true)
     {
-        Metadata.SetIsTableExcludedFromMigrations(excluded);
+        Overrides.SetIsTableExcludedFromMigrations(excluded);
 
         return this;
     }
@@ -71,7 +75,7 @@ public class TableBuilder
     /// </remarks>
     public virtual TriggerBuilder HasTrigger(string name)
         => new((Trigger)InternalTriggerBuilder.HasTrigger(
-            (IConventionEntityType)Metadata,
+            (IConventionEntityType)Overrides.EntityType,
             name,
             Name,
             Schema,
@@ -84,7 +88,7 @@ public class TableBuilder
     /// <param name="propertyName">The name of the property to be configured.</param>
     /// <returns>An object that can be used to configure the property.</returns>
     public virtual ColumnBuilder Property(string propertyName)
-        => new(StoreObjectIdentifier.Table(GetName(), Schema), EntityTypeBuilder.Property(propertyName));
+        => new(Overrides.StoreObject, EntityTypeBuilder.Property(propertyName));
 
     /// <summary>
     ///     Maps the property to a column on the current table and returns an object that can be used
@@ -94,10 +98,7 @@ public class TableBuilder
     /// <param name="propertyName">The name of the property to be configured.</param>
     /// <returns>An object that can be used to configure the property.</returns>
     public virtual ColumnBuilder<TProperty> Property<TProperty>(string propertyName)
-        => new(StoreObjectIdentifier.Table(GetName(), Schema), EntityTypeBuilder.Property(typeof(TProperty), propertyName));
-
-    private string GetName()
-        => Name ?? throw new InvalidOperationException("Table name must be specified for table-specific overrides.");
+        => new(Overrides.StoreObject, EntityTypeBuilder.Property(typeof(TProperty), propertyName));
 
     #region Hidden System.Object members
 

@@ -60,6 +60,28 @@ public class OwnedNavigationTableBuilder
         return this;
     }
 
+    /// <summary>
+    ///     Maps the property to a column on the current table and returns an object that can be used
+    ///     to provide table-specific configuration if the property is mapped to more than one table.
+    /// </summary>
+    /// <param name="propertyName">The name of the property to be configured.</param>
+    /// <returns>An object that can be used to configure the property.</returns>
+    public virtual ColumnBuilder Property(string propertyName)
+        => new(StoreObjectIdentifier.Table(GetName(), Schema), OwnedNavigationBuilder.Property(propertyName));
+
+    /// <summary>
+    ///     Maps the property to a column on the current table and returns an object that can be used
+    ///     to provide table-specific configuration if the property is mapped to more than one table.
+    /// </summary>
+    /// <typeparam name="TProperty">The type of the property to be configured.</typeparam>
+    /// <param name="propertyName">The name of the property to be configured.</param>
+    /// <returns>An object that can be used to configure the property.</returns>
+    public virtual ColumnBuilder<TProperty> Property<TProperty>(string propertyName)
+        => new(StoreObjectIdentifier.Table(GetName(), Schema), OwnedNavigationBuilder.Property(typeof(TProperty), propertyName));
+
+    private string GetName()
+        => Name ?? throw new InvalidOperationException("Table name must be specified for table-specific overrides.");
+
     #region Hidden System.Object members
 
     /// <summary>

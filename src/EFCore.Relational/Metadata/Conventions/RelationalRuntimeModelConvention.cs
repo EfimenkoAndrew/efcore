@@ -285,14 +285,14 @@ public class RelationalRuntimeModelConvention : RuntimeModelConvention
 
             if (annotations.TryGetValue(RelationalAnnotationNames.RelationalOverrides, out var overrides))
             {
-                var runtimePropertyOverrides = new SortedDictionary<StoreObjectIdentifier, object>();
-                foreach (var (storeObjectIdentifier, value) in (SortedDictionary<StoreObjectIdentifier, object>?)overrides!)
+                var propertyOverrides = (Dictionary<StoreObjectIdentifier, IRelationalPropertyOverrides>)overrides!;
+                var runtimePropertyOverrides = new Dictionary<StoreObjectIdentifier, IRelationalPropertyOverrides>();
+                foreach (var (storeObjectIdentifier, value) in propertyOverrides.OrderBy(pair => pair.Key.Name, StringComparer.Ordinal))
                 {
-                    var runtimeOverrides = Create((IRelationalPropertyOverrides)value, runtimeProperty);
+                    var runtimeOverrides = Create(value, runtimeProperty);
                     runtimePropertyOverrides[storeObjectIdentifier] = runtimeOverrides;
 
-                    CreateAnnotations(
-                        (IRelationalPropertyOverrides)value, runtimeOverrides,
+                    CreateAnnotations(value, runtimeOverrides,
                         static (convention, annotations, source, target, runtime) =>
                             convention.ProcessPropertyOverridesAnnotations(annotations, source, target, runtime));
                 }
@@ -308,7 +308,8 @@ public class RelationalRuntimeModelConvention : RuntimeModelConvention
         => new(
             runtimeProperty,
             propertyOverrides.ColumnNameOverridden,
-            propertyOverrides.ColumnName);
+            propertyOverrides.ColumnName,
+            propertyOverrides.StoreObject);
 
     /// <summary>
     ///     Updates the relational property overrides annotations that will be set on the read-only object.

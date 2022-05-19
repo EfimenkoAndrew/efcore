@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+
 namespace Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 /// <summary>
@@ -8,7 +10,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Builders;
 ///     and it is not designed to be directly constructed in your application code.
 /// </summary>
 /// <typeparam name="TEntity">The entity type being configured.</typeparam>
-public class OwnedNavigationTableBuilder<TEntity> : OwnedNavigationTableBuilder
+public class OwnedNavigationSplitTableBuilder<TEntity> : OwnedNavigationSplitTableBuilder
     where TEntity : class
 {
     /// <summary>
@@ -18,8 +20,8 @@ public class OwnedNavigationTableBuilder<TEntity> : OwnedNavigationTableBuilder
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
     [EntityFrameworkInternal]
-    public OwnedNavigationTableBuilder(string? name, string? schema, OwnedNavigationBuilder ownedNavigationBuilder)
-        : base(name, schema, ownedNavigationBuilder)
+    public OwnedNavigationSplitTableBuilder(IRelationalEntityTypeOverrides overrides, OwnedNavigationBuilder ownedNavigationBuilder)
+        : base(overrides, ownedNavigationBuilder)
     {
     }
 
@@ -31,6 +33,6 @@ public class OwnedNavigationTableBuilder<TEntity> : OwnedNavigationTableBuilder
     /// </remarks>
     /// <param name="excluded">A value indicating whether the table should be managed by migrations.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public new virtual OwnedNavigationTableBuilder<TEntity> ExcludeFromMigrations(bool excluded = true)
-        => (OwnedNavigationTableBuilder<TEntity>)base.ExcludeFromMigrations(excluded);
+    public new virtual OwnedNavigationSplitTableBuilder<TEntity> ExcludeFromMigrations(bool excluded = true)
+        => (OwnedNavigationSplitTableBuilder<TEntity>)base.ExcludeFromMigrations(excluded);
 }

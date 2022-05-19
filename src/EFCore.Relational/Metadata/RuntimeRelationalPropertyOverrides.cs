@@ -19,12 +19,15 @@ public class RuntimeRelationalPropertyOverrides : AnnotatableBase, IRelationalPr
     /// <param name="property">The property for which the overrides are applied.</param>
     /// <param name="columnNameOverridden">Whether the column name is overridden.</param>
     /// <param name="columnName">The column name.</param>
+    /// <param name="storeObject">The store object for which the configuration is applied.</param>
     public RuntimeRelationalPropertyOverrides(
         RuntimeProperty property,
         bool columnNameOverridden,
-        string? columnName)
+        string? columnName,
+        in StoreObjectIdentifier storeObject)
     {
         Property = property;
+        StoreObject = storeObject;
         if (columnNameOverridden)
         {
             SetAnnotation(RelationalAnnotationNames.ColumnName, columnName);
@@ -35,6 +38,11 @@ public class RuntimeRelationalPropertyOverrides : AnnotatableBase, IRelationalPr
     ///     Gets the property for which the overrides are applied.
     /// </summary>
     public virtual RuntimeProperty Property { get; }
+
+    /// <summary>
+    ///     Gets store object for which the configuration is applied.
+    /// </summary>
+    public virtual StoreObjectIdentifier StoreObject { get; }
 
     /// <inheritdoc />
     IProperty IRelationalPropertyOverrides.Property

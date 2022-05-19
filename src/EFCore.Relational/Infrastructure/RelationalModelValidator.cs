@@ -1534,18 +1534,18 @@ public class RelationalModelValidator : ModelValidator
         {
             foreach (var property in entityType.GetDeclaredProperties())
             {
-                var tableOverrides = (SortedDictionary<StoreObjectIdentifier, object>?)
-                    property[RelationalAnnotationNames.RelationalOverrides];
-                if (tableOverrides == null)
+                var storeObjectOverrides = RelationalPropertyOverrides.Get(property);
+                if (storeObjectOverrides == null)
                 {
                     continue;
                 }
 
-                foreach (var storeOverride in tableOverrides.Keys)
+                foreach (var storeObjectOverride in storeObjectOverrides)
                 {
-                    var name = storeOverride.Name;
-                    var schema = storeOverride.Schema;
-                    switch (storeOverride.StoreObjectType)
+                    var storeObject = storeObjectOverride.StoreObject;
+                    var name = storeObject.Name;
+                    var schema = storeObject.Schema;
+                    switch (storeObject.StoreObjectType)
                     {
                         case StoreObjectType.Table:
                             if (!entityType.GetDerivedTypesInclusive().Any(
@@ -1592,7 +1592,7 @@ public class RelationalModelValidator : ModelValidator
 
                             break;
                         default:
-                            throw new NotSupportedException(storeOverride.StoreObjectType.ToString());
+                            throw new NotSupportedException(storeObject.StoreObjectType.ToString());
                     }
                 }
             }

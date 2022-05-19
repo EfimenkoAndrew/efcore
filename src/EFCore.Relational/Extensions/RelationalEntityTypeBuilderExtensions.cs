@@ -325,24 +325,120 @@ public static class RelationalEntityTypeBuilderExtensions
     }
 
     /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <param name="entityTypeBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder SplitToTable(
+        this EntityTypeBuilder entityTypeBuilder,
+        string name,
+        Action<SplitTableBuilder> buildAction)
+        => entityTypeBuilder.SplitToTable(name, null, buildAction);
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <typeparam name="TEntity">The entity type being configured.</typeparam>
+    /// <param name="entityTypeBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder<TEntity> SplitToTable<TEntity>(
+        this EntityTypeBuilder<TEntity> entityTypeBuilder,
+        string name,
+        Action<SplitTableBuilder<TEntity>> buildAction)
+        where TEntity : class
+        => entityTypeBuilder.SplitToTable(name, null, buildAction);
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="schema">The schema of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder SplitToTable(
+        this EntityTypeBuilder ownedNavigationBuilder,
+        string name,
+        string? schema,
+        Action<SplitTableBuilder> buildAction)
+    {
+        Check.NotNull(name, nameof(name));
+        Check.NullButNotEmpty(schema, nameof(schema));
+        Check.NotNull(buildAction, nameof(buildAction));
+
+        buildAction(new SplitTableBuilder(
+            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.Metadata, StoreObjectIdentifier.Table(name, schema)),
+            ownedNavigationBuilder));
+
+        return ownedNavigationBuilder;
+    }
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <typeparam name="TEntity">The entity type being configured.</typeparam>
+    /// <param name="entityTypeBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="schema">The schema of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder<TEntity> SplitToTable<TEntity>(
+        this EntityTypeBuilder<TEntity> entityTypeBuilder,
+        string name,
+        string? schema,
+        Action<SplitTableBuilder<TEntity>> buildAction)
+        where TEntity : class
+    {
+        Check.NotNull(name, nameof(name));
+        Check.NullButNotEmpty(schema, nameof(schema));
+        Check.NotNull(buildAction, nameof(buildAction));
+
+        buildAction(new SplitTableBuilder<TEntity>(
+            RelationalEntityTypeOverrides.GetOrCreate(entityTypeBuilder.Metadata, StoreObjectIdentifier.Table(name, schema)),
+            entityTypeBuilder));
+
+        return entityTypeBuilder;
+    }
+
+    /// <summary>
     ///     Configures the table that the entity type maps to when targeting a relational database.
     /// </summary>
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
     public static OwnedNavigationBuilder ToTable(
-        this OwnedNavigationBuilder referenceOwnershipBuilder,
+        this OwnedNavigationBuilder ownedNavigationBuilder,
         string? name)
     {
         Check.NullButNotEmpty(name, nameof(name));
 
-        referenceOwnershipBuilder.OwnedEntityType.SetTableName(name);
-        referenceOwnershipBuilder.OwnedEntityType.SetSchema(null);
+        ownedNavigationBuilder.OwnedEntityType.SetTableName(name);
+        ownedNavigationBuilder.OwnedEntityType.SetSchema(null);
 
-        return referenceOwnershipBuilder;
+        return ownedNavigationBuilder;
     }
 
     /// <summary>
@@ -351,18 +447,18 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="buildAction">An action that performs configuration of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
     public static OwnedNavigationBuilder ToTable(
-        this OwnedNavigationBuilder referenceOwnershipBuilder,
+        this OwnedNavigationBuilder ownedNavigationBuilder,
         Action<OwnedNavigationTableBuilder> buildAction)
     {
         Check.NotNull(buildAction, nameof(buildAction));
 
-        buildAction(new OwnedNavigationTableBuilder(null, null, referenceOwnershipBuilder));
+        buildAction(new OwnedNavigationTableBuilder(null, null, ownedNavigationBuilder));
 
-        return referenceOwnershipBuilder;
+        return ownedNavigationBuilder;
     }
 
     /// <summary>
@@ -371,20 +467,22 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="buildAction">An action that performs configuration of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> ToTable<TOwnerEntity, TRelatedEntity>(
-        this OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> referenceOwnershipBuilder,
-        Action<OwnedNavigationTableBuilder<TRelatedEntity>> buildAction)
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ToTable<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
+        Action<OwnedNavigationTableBuilder<TDependentEntity>> buildAction)
         where TOwnerEntity : class
-        where TRelatedEntity : class
+        where TDependentEntity : class
     {
         Check.NotNull(buildAction, nameof(buildAction));
 
-        buildAction(new OwnedNavigationTableBuilder<TRelatedEntity>(null, null, referenceOwnershipBuilder));
+        buildAction(new OwnedNavigationTableBuilder<TDependentEntity>(null, null, ownedNavigationBuilder));
 
-        return referenceOwnershipBuilder;
+        return ownedNavigationBuilder;
     }
 
     /// <summary>
@@ -393,15 +491,17 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> ToTable<TOwnerEntity, TRelatedEntity>(
-        this OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> referenceOwnershipBuilder,
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ToTable<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
         string? name)
         where TOwnerEntity : class
-        where TRelatedEntity : class
-        => (OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity>)((OwnedNavigationBuilder)referenceOwnershipBuilder).ToTable(name);
+        where TDependentEntity : class
+        => (OwnedNavigationBuilder<TOwnerEntity, TDependentEntity>)((OwnedNavigationBuilder)ownedNavigationBuilder).ToTable(name);
 
     /// <summary>
     ///     Configures the table that the entity type maps to when targeting a relational database.
@@ -409,23 +509,23 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the table.</param>
     /// <param name="buildAction">An action that performs configuration of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
     public static OwnedNavigationBuilder ToTable(
-        this OwnedNavigationBuilder referenceOwnershipBuilder,
+        this OwnedNavigationBuilder ownedNavigationBuilder,
         string? name,
         Action<OwnedNavigationTableBuilder> buildAction)
     {
         Check.NullButNotEmpty(name, nameof(name));
         Check.NotNull(buildAction, nameof(buildAction));
 
-        referenceOwnershipBuilder.OwnedEntityType.SetTableName(name);
-        referenceOwnershipBuilder.OwnedEntityType.SetSchema(null);
-        buildAction(new OwnedNavigationTableBuilder(name, null, referenceOwnershipBuilder));
+        ownedNavigationBuilder.OwnedEntityType.SetTableName(name);
+        ownedNavigationBuilder.OwnedEntityType.SetSchema(null);
+        buildAction(new OwnedNavigationTableBuilder(name, null, ownedNavigationBuilder));
 
-        return referenceOwnershipBuilder;
+        return ownedNavigationBuilder;
     }
 
     /// <summary>
@@ -434,25 +534,27 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the table.</param>
     /// <param name="buildAction">An action that performs configuration of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> ToTable<TOwnerEntity, TRelatedEntity>(
-        this OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> referenceOwnershipBuilder,
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ToTable<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
         string? name,
-        Action<OwnedNavigationTableBuilder<TRelatedEntity>> buildAction)
+        Action<OwnedNavigationTableBuilder<TDependentEntity>> buildAction)
         where TOwnerEntity : class
-        where TRelatedEntity : class
+        where TDependentEntity : class
     {
         Check.NullButNotEmpty(name, nameof(name));
         Check.NotNull(buildAction, nameof(buildAction));
 
-        referenceOwnershipBuilder.OwnedEntityType.SetTableName(name);
-        referenceOwnershipBuilder.OwnedEntityType.SetSchema(null);
-        buildAction(new OwnedNavigationTableBuilder<TRelatedEntity>(name, null, referenceOwnershipBuilder));
+        ownedNavigationBuilder.OwnedEntityType.SetTableName(name);
+        ownedNavigationBuilder.OwnedEntityType.SetSchema(null);
+        buildAction(new OwnedNavigationTableBuilder<TDependentEntity>(name, null, ownedNavigationBuilder));
 
-        return referenceOwnershipBuilder;
+        return ownedNavigationBuilder;
     }
 
     /// <summary>
@@ -461,22 +563,22 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the table.</param>
     /// <param name="schema">The schema of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
     public static OwnedNavigationBuilder ToTable(
-        this OwnedNavigationBuilder referenceOwnershipBuilder,
+        this OwnedNavigationBuilder ownedNavigationBuilder,
         string name,
         string? schema)
     {
         Check.NotNull(name, nameof(name));
         Check.NullButNotEmpty(schema, nameof(schema));
 
-        referenceOwnershipBuilder.OwnedEntityType.SetTableName(name);
-        referenceOwnershipBuilder.OwnedEntityType.SetSchema(schema);
+        ownedNavigationBuilder.OwnedEntityType.SetTableName(name);
+        ownedNavigationBuilder.OwnedEntityType.SetSchema(schema);
 
-        return referenceOwnershipBuilder;
+        return ownedNavigationBuilder;
     }
 
     /// <summary>
@@ -485,13 +587,13 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the table.</param>
     /// <param name="schema">The schema of the table.</param>
     /// <param name="buildAction">An action that performs configuration of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
     public static OwnedNavigationBuilder ToTable(
-        this OwnedNavigationBuilder referenceOwnershipBuilder,
+        this OwnedNavigationBuilder ownedNavigationBuilder,
         string name,
         string? schema,
         Action<OwnedNavigationTableBuilder> buildAction)
@@ -500,11 +602,11 @@ public static class RelationalEntityTypeBuilderExtensions
         Check.NullButNotEmpty(schema, nameof(schema));
         Check.NotNull(buildAction, nameof(buildAction));
 
-        referenceOwnershipBuilder.OwnedEntityType.SetTableName(name);
-        referenceOwnershipBuilder.OwnedEntityType.SetSchema(schema);
-        buildAction(new OwnedNavigationTableBuilder(name, schema, referenceOwnershipBuilder));
+        ownedNavigationBuilder.OwnedEntityType.SetTableName(name);
+        ownedNavigationBuilder.OwnedEntityType.SetSchema(schema);
+        buildAction(new OwnedNavigationTableBuilder(name, schema, ownedNavigationBuilder));
 
-        return referenceOwnershipBuilder;
+        return ownedNavigationBuilder;
     }
 
     /// <summary>
@@ -513,17 +615,19 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the table.</param>
     /// <param name="schema">The schema of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> ToTable<TOwnerEntity, TRelatedEntity>(
-        this OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> referenceOwnershipBuilder,
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ToTable<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
         string name,
         string? schema)
         where TOwnerEntity : class
-        where TRelatedEntity : class
-        => (OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity>)((OwnedNavigationBuilder)referenceOwnershipBuilder).ToTable(
+        where TDependentEntity : class
+        => (OwnedNavigationBuilder<TOwnerEntity, TDependentEntity>)((OwnedNavigationBuilder)ownedNavigationBuilder).ToTable(
             name, schema);
 
     /// <summary>
@@ -532,28 +636,130 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the table.</param>
     /// <param name="schema">The schema of the table.</param>
     /// <param name="buildAction">An action that performs configuration of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> ToTable<TOwnerEntity, TRelatedEntity>(
-        this OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> referenceOwnershipBuilder,
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ToTable<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
         string name,
         string? schema,
-        Action<OwnedNavigationTableBuilder<TRelatedEntity>> buildAction)
+        Action<OwnedNavigationTableBuilder<TDependentEntity>> buildAction)
         where TOwnerEntity : class
-        where TRelatedEntity : class
+        where TDependentEntity : class
     {
         Check.NotNull(name, nameof(name));
         Check.NullButNotEmpty(schema, nameof(schema));
         Check.NotNull(buildAction, nameof(buildAction));
 
-        referenceOwnershipBuilder.OwnedEntityType.SetTableName(name);
-        referenceOwnershipBuilder.OwnedEntityType.SetSchema(schema);
-        buildAction(new OwnedNavigationTableBuilder<TRelatedEntity>(name, schema, referenceOwnershipBuilder));
+        ownedNavigationBuilder.OwnedEntityType.SetTableName(name);
+        ownedNavigationBuilder.OwnedEntityType.SetSchema(schema);
+        buildAction(new OwnedNavigationTableBuilder<TDependentEntity>(name, schema, ownedNavigationBuilder));
 
-        return referenceOwnershipBuilder;
+        return ownedNavigationBuilder;
+    }
+    
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder SplitToTable(
+        this EntityTypeBuilder ownedNavigationBuilder,
+        string name,
+        Action<OwnedNavigationSplitTableBuilder> buildAction)
+        => ownedNavigationBuilder.SplitToTable(name, null, buildAction);
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> SplitToTable<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
+        string name,
+        Action<OwnedNavigationSplitTableBuilder<TDependentEntity>> buildAction)
+        where TOwnerEntity : class
+        where TDependentEntity : class
+        => ownedNavigationBuilder.SplitToTable(name, null, buildAction);
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="schema">The schema of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder SplitToTable(
+        this EntityTypeBuilder ownedNavigationBuilder,
+        string name,
+        string? schema,
+        Action<OwnedNavigationSplitTableBuilder> buildAction)
+    {
+        Check.NotNull(name, nameof(name));
+        Check.NullButNotEmpty(schema, nameof(schema));
+        Check.NotNull(buildAction, nameof(buildAction));
+
+        buildAction(new SplitTableBuilder(
+            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.OwnedEntityType, StoreObjectIdentifier.Table(name, schema)),
+            ownedNavigationBuilder));
+
+        return ownedNavigationBuilder;
+    }
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="schema">The schema of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> SplitToTable<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
+        string name,
+        string? schema,
+        Action<OwnedNavigationSplitTableBuilder<TDependentEntity>> buildAction)
+        where TOwnerEntity : class
+        where TDependentEntity : class
+    {
+        Check.NotNull(name, nameof(name));
+        Check.NullButNotEmpty(schema, nameof(schema));
+        Check.NotNull(buildAction, nameof(buildAction));
+
+        buildAction(new OwnedNavigationSplitTableBuilder<TDependentEntity>(
+            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.OwnedEntityType, StoreObjectIdentifier.Table(name, schema)),
+            ownedNavigationBuilder));
+
+        return ownedNavigationBuilder;
     }
 
     /// <summary>
@@ -746,14 +952,14 @@ public static class RelationalEntityTypeBuilderExtensions
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
     /// <typeparam name="TEntity">The entity type being configured.</typeparam>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <param name="entityTypeBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the view.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
     public static EntityTypeBuilder<TEntity> ToView<TEntity>(
-        this EntityTypeBuilder<TEntity> referenceOwnershipBuilder,
+        this EntityTypeBuilder<TEntity> entityTypeBuilder,
         string? name)
         where TEntity : class
-        => (EntityTypeBuilder<TEntity>)ToView((EntityTypeBuilder)referenceOwnershipBuilder, name);
+        => (EntityTypeBuilder<TEntity>)ToView((EntityTypeBuilder)entityTypeBuilder, name);
 
     /// <summary>
     ///     Configures the view that the entity type maps to when targeting a relational database.
@@ -799,18 +1005,113 @@ public static class RelationalEntityTypeBuilderExtensions
         => (EntityTypeBuilder<TEntity>)ToView((EntityTypeBuilder)entityTypeBuilder, name, schema);
 
     /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <param name="entityTypeBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder SplitToView(
+        this EntityTypeBuilder entityTypeBuilder,
+        string name,
+        Action<SplitViewBuilder> buildAction)
+        => entityTypeBuilder.SplitToView(name, null, buildAction);
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <typeparam name="TEntity">The entity type being configured.</typeparam>
+    /// <param name="entityTypeBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder<TEntity> SplitToView<TEntity>(
+        this EntityTypeBuilder<TEntity> entityTypeBuilder,
+        string name,
+        Action<SplitViewBuilder<TEntity>> buildAction)
+        where TEntity : class
+        => entityTypeBuilder.SplitToView(name, null, buildAction);
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="schema">The schema of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder SplitToView(
+        this EntityTypeBuilder ownedNavigationBuilder,
+        string name,
+        string? schema,
+        Action<SplitViewBuilder> buildAction)
+    {
+        Check.NotNull(name, nameof(name));
+        Check.NullButNotEmpty(schema, nameof(schema));
+        Check.NotNull(buildAction, nameof(buildAction));
+
+        buildAction(new SplitViewBuilder(
+            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.Metadata, StoreObjectIdentifier.View(name, schema)),
+            ownedNavigationBuilder));
+
+        return ownedNavigationBuilder;
+    }
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different table.
+    ///     The primary key properties are mapped to all tables, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <typeparam name="TEntity">The entity type being configured.</typeparam>
+    /// <param name="entityTypeBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the table.</param>
+    /// <param name="schema">The schema of the table.</param>
+    /// <param name="buildAction">An action that performs configuration of the table.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder<TEntity> SplitToView<TEntity>(
+        this EntityTypeBuilder<TEntity> entityTypeBuilder,
+        string name,
+        string? schema,
+        Action<SplitViewBuilder<TEntity>> buildAction)
+        where TEntity : class
+    {
+        Check.NotNull(name, nameof(name));
+        Check.NullButNotEmpty(schema, nameof(schema));
+        Check.NotNull(buildAction, nameof(buildAction));
+
+        buildAction(new SplitViewBuilder<TEntity>(
+            RelationalEntityTypeOverrides.GetOrCreate(entityTypeBuilder.Metadata, StoreObjectIdentifier.View(name, schema)),
+            entityTypeBuilder));
+
+        return entityTypeBuilder;
+    }
+    /// <summary>
     ///     Configures the view that the entity type maps to when targeting a relational database.
     /// </summary>
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the view.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
     public static OwnedNavigationBuilder ToView(
-        this OwnedNavigationBuilder referenceOwnershipBuilder,
+        this OwnedNavigationBuilder ownedNavigationBuilder,
         string? name)
-        => referenceOwnershipBuilder.ToView(name, null);
+        => ownedNavigationBuilder.ToView(name, null);
 
     /// <summary>
     ///     Configures the view that the entity type maps to when targeting a relational database.
@@ -818,15 +1119,17 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the view.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> ToView<TOwnerEntity, TRelatedEntity>(
-        this OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> referenceOwnershipBuilder,
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ToView<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
         string? name)
         where TOwnerEntity : class
-        where TRelatedEntity : class
-        => (OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity>)ToView((OwnedNavigationBuilder)referenceOwnershipBuilder, name);
+        where TDependentEntity : class
+        => (OwnedNavigationBuilder<TOwnerEntity, TDependentEntity>)ToView((OwnedNavigationBuilder)ownedNavigationBuilder, name);
 
     /// <summary>
     ///     Configures the view that the entity type maps to when targeting a relational database.
@@ -834,23 +1137,23 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the view.</param>
     /// <param name="schema">The schema of the view.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
     public static OwnedNavigationBuilder ToView(
-        this OwnedNavigationBuilder referenceOwnershipBuilder,
+        this OwnedNavigationBuilder ownedNavigationBuilder,
         string? name,
         string? schema)
     {
         Check.NullButNotEmpty(name, nameof(name));
         Check.NullButNotEmpty(schema, nameof(schema));
 
-        referenceOwnershipBuilder.OwnedEntityType.SetViewName(name);
-        referenceOwnershipBuilder.OwnedEntityType.SetViewSchema(schema);
-        referenceOwnershipBuilder.OwnedEntityType.SetAnnotation(RelationalAnnotationNames.ViewDefinitionSql, null);
+        ownedNavigationBuilder.OwnedEntityType.SetViewName(name);
+        ownedNavigationBuilder.OwnedEntityType.SetViewSchema(schema);
+        ownedNavigationBuilder.OwnedEntityType.SetAnnotation(RelationalAnnotationNames.ViewDefinitionSql, null);
 
-        return referenceOwnershipBuilder;
+        return ownedNavigationBuilder;
     }
 
     /// <summary>
@@ -859,18 +1162,120 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the view.</param>
     /// <param name="schema">The schema of the view.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> ToView<TOwnerEntity, TRelatedEntity>(
-        this OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> referenceOwnershipBuilder,
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ToView<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
         string? name,
         string? schema)
         where TOwnerEntity : class
-        where TRelatedEntity : class
-        => (OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity>)ToView(
-            (OwnedNavigationBuilder)referenceOwnershipBuilder, name, schema);
+        where TDependentEntity : class
+        => (OwnedNavigationBuilder<TOwnerEntity, TDependentEntity>)ToView(
+            (OwnedNavigationBuilder)ownedNavigationBuilder, name, schema);
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different view.
+    ///     The primary key properties are mapped to all views, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the view.</param>
+    /// <param name="buildAction">An action that performs configuration of the view.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder SplitToView(
+        this EntityTypeBuilder ownedNavigationBuilder,
+        string name,
+        Action<OwnedNavigationSplitViewBuilder> buildAction)
+        => ownedNavigationBuilder.SplitToView(name, null, buildAction);
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different view.
+    ///     The primary key properties are mapped to all views, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the view.</param>
+    /// <param name="buildAction">An action that performs configuration of the view.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> SplitToView<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
+        string name,
+        Action<OwnedNavigationSplitViewBuilder<TDependentEntity>> buildAction)
+        where TOwnerEntity : class
+        where TDependentEntity : class
+        => ownedNavigationBuilder.SplitToView(name, null, buildAction);
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different view.
+    ///     The primary key properties are mapped to all views, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the view.</param>
+    /// <param name="schema">The schema of the view.</param>
+    /// <param name="buildAction">An action that performs configuration of the view.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static EntityTypeBuilder SplitToView(
+        this EntityTypeBuilder ownedNavigationBuilder,
+        string name,
+        string? schema,
+        Action<OwnedNavigationSplitViewBuilder> buildAction)
+    {
+        Check.NotNull(name, nameof(name));
+        Check.NullButNotEmpty(schema, nameof(schema));
+        Check.NotNull(buildAction, nameof(buildAction));
+
+        buildAction(new SplitViewBuilder(
+            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.OwnedEntityType, StoreObjectIdentifier.View(name, schema)),
+            ownedNavigationBuilder));
+
+        return ownedNavigationBuilder;
+    }
+
+    /// <summary>
+    ///     Configures some of the properties on this entity type to be mapped to a different view.
+    ///     The primary key properties are mapped to all views, other properties must be explicitly mapped.
+    /// </summary>
+    /// <remarks>
+    ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
+    /// </remarks>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
+    /// <param name="name">The name of the view.</param>
+    /// <param name="schema">The schema of the view.</param>
+    /// <param name="buildAction">An action that performs configuration of the view.</param>
+    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> SplitToView<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
+        string name,
+        string? schema,
+        Action<OwnedNavigationSplitViewBuilder<TDependentEntity>> buildAction)
+        where TOwnerEntity : class
+        where TDependentEntity : class
+    {
+        Check.NotNull(name, nameof(name));
+        Check.NullButNotEmpty(schema, nameof(schema));
+        Check.NotNull(buildAction, nameof(buildAction));
+
+        buildAction(new OwnedNavigationSplitViewBuilder<TDependentEntity>(
+            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.OwnedEntityType, StoreObjectIdentifier.View(name, schema)),
+            ownedNavigationBuilder));
+
+        return ownedNavigationBuilder;
+    }
 
     /// <summary>
     ///     Configures the view that the entity type maps to when targeting a relational database.
@@ -1322,15 +1727,17 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the function.</param>
     /// <returns>The function configuration builder.</returns>
-    public static OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> ToFunction<TOwnerEntity, TRelatedEntity>(
-        this OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> referenceOwnershipBuilder,
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ToFunction<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
         string? name)
         where TOwnerEntity : class
-        where TRelatedEntity : class
-        => (OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity>)ToFunction((OwnedNavigationBuilder)referenceOwnershipBuilder, name);
+        where TDependentEntity : class
+        => (OwnedNavigationBuilder<TOwnerEntity, TDependentEntity>)ToFunction((OwnedNavigationBuilder)ownedNavigationBuilder, name);
 
     /// <summary>
     ///     Configures the function that the entity type maps to when targeting a relational database.
@@ -1338,16 +1745,18 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="function">The method representing the function.</param>
     /// <returns>The function configuration builder.</returns>
-    public static OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> ToFunction<TOwnerEntity, TRelatedEntity>(
-        this OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> referenceOwnershipBuilder,
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ToFunction<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
         MethodInfo? function)
         where TOwnerEntity : class
-        where TRelatedEntity : class
-        => (OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity>)ToFunction(
-            (OwnedNavigationBuilder)referenceOwnershipBuilder, function);
+        where TDependentEntity : class
+        => (OwnedNavigationBuilder<TOwnerEntity, TDependentEntity>)ToFunction(
+            (OwnedNavigationBuilder)ownedNavigationBuilder, function);
 
     /// <summary>
     ///     Configures the function that the entity type maps to when targeting a relational database.
@@ -1355,18 +1764,20 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the function.</param>
     /// <param name="configureFunction">The function configuration action.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> ToFunction<TOwnerEntity, TRelatedEntity>(
-        this OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> referenceOwnershipBuilder,
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ToFunction<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
         string name,
         Action<TableValuedFunctionBuilder> configureFunction)
         where TOwnerEntity : class
-        where TRelatedEntity : class
-        => (OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity>)ToFunction(
-            (OwnedNavigationBuilder)referenceOwnershipBuilder, name, configureFunction);
+        where TDependentEntity : class
+        => (OwnedNavigationBuilder<TOwnerEntity, TDependentEntity>)ToFunction(
+            (OwnedNavigationBuilder)ownedNavigationBuilder, name, configureFunction);
 
     /// <summary>
     ///     Configures the function that the entity type maps to when targeting a relational database.
@@ -1374,18 +1785,20 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="referenceOwnershipBuilder">The builder for the entity type being configured.</param>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
+    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
     /// <param name="function">The method representing the function.</param>
     /// <param name="configureFunction">The function configuration action.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> ToFunction<TOwnerEntity, TRelatedEntity>(
-        this OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity> referenceOwnershipBuilder,
+    public static OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ToFunction<TOwnerEntity, TDependentEntity>(
+        this OwnedNavigationBuilder<TOwnerEntity, TDependentEntity> ownedNavigationBuilder,
         MethodInfo function,
         Action<TableValuedFunctionBuilder> configureFunction)
         where TOwnerEntity : class
-        where TRelatedEntity : class
-        => (OwnedNavigationBuilder<TOwnerEntity, TRelatedEntity>)ToFunction(
-            (OwnedNavigationBuilder)referenceOwnershipBuilder, function, configureFunction);
+        where TDependentEntity : class
+        => (OwnedNavigationBuilder<TOwnerEntity, TDependentEntity>)ToFunction(
+            (OwnedNavigationBuilder)ownedNavigationBuilder, function, configureFunction);
 
     [return: NotNullIfNotNull("name")]
     private static IMutableDbFunction? ToFunction(string? name, IMutableEntityType entityType)
@@ -1662,6 +2075,8 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-check-constraints">Database check constraints</see> for more information and examples.
     /// </remarks>
+    /// <typeparam name="TOwnerEntity">The entity type owning the relationship.</typeparam>
+    /// <typeparam name="TDependentEntity">The dependent entity type of the relationship.</typeparam>
     /// <param name="ownedNavigationBuilder">The navigation builder for the owned type.</param>
     /// <param name="name">The name of the check constraint.</param>
     /// <param name="sql">The logical constraint sql used in the check constraint.</param>
