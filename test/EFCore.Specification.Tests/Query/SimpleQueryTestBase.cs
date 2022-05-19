@@ -1134,4 +1134,62 @@ public abstract class SimpleQueryTestBase : NonSharedModelTestBase
         public DateTime? SomeOtherNullableDateTime { get; set; }
         public Parent26744 Parent { get; set; }
     }
+
+    [ConditionalTheory]
+    [MemberData(nameof(IsAsyncData))]
+    public virtual async Task Flattened_GroupJoin_on_interface_generic(bool async)
+    {
+        var contextFactory = await InitializeAsync<Context27343>(seed: c => c.Seed());
+        using var context = contextFactory.CreateContext();
+
+        var entitySet = context.Parents.AsQueryable<IDocumentType27343>();
+
+        var query = from p in entitySet
+                    join c in context.Set<Child27343>()
+                    on p.Id equals c.Id into grouping
+                    from c in grouping.DefaultIfEmpty()
+                    select c;
+
+        var result = async
+            ? await query.ToListAsync()
+            : query.ToList();
+
+        Assert.Empty(result);
+    }
+
+    protected class Context27343 : DbContext
+    {
+        public Context27343(DbContextOptions options)
+            : base(options)
+        {
+        }
+
+        public DbSet<Parent27343> Parents { get; set; }
+
+        public void Seed()
+        {
+
+            SaveChanges();
+        }
+    }
+
+    protected interface IDocumentType27343
+    {
+        public int Id { get; }
+    }
+
+    protected class Parent27343 : IDocumentType27343
+    {
+        public int Id { get; set; }
+        public List<Child27343> Children { get; set; }
+    }
+
+    protected class Child27343
+    {
+        public int Id { get; set; }
+        public int SomeInteger { get; set; }
+        public DateTime? SomeNullableDateTime { get; set; }
+        public DateTime? SomeOtherNullableDateTime { get; set; }
+        public Parent27343 Parent { get; set; }
+    }
 }
