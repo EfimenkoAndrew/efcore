@@ -19,14 +19,12 @@ public class SplitTableBuilder
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
     [EntityFrameworkInternal]
-    public SplitTableBuilder(IRelationalEntityTypeOverrides overrides, EntityTypeBuilder entityTypeBuilder)
+    public SplitTableBuilder(in StoreObjectIdentifier storeObject, EntityTypeBuilder entityTypeBuilder)
     {
-        Check.DebugAssert(overrides.StoreObject.StoreObjectType == StoreObjectType.Table,
-            "StoreObjectType should be Table, not " + overrides.StoreObject.StoreObjectType);
-        Check.DebugAssert(overrides.EntityType == entityTypeBuilder.Metadata,
-            "StoreObjectType should be Table, not " + overrides.StoreObject.StoreObjectType);
+        Check.DebugAssert(storeObject.StoreObjectType == StoreObjectType.Table,
+            "StoreObjectType should be Table, not " + storeObject.StoreObjectType);
 
-        Overrides = overrides;
+        Overrides = RelationalEntityTypeOverrides.GetOrCreate(entityTypeBuilder.Metadata, storeObject);
         EntityTypeBuilder = entityTypeBuilder;
     }
 

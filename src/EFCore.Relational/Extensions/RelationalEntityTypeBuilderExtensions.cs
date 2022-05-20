@@ -367,13 +367,13 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <remarks>
     ///     See <see href="https://aka.ms/efcore-docs-modeling">Modeling entity types and relationships</see> for more information and examples.
     /// </remarks>
-    /// <param name="ownedNavigationBuilder">The builder for the entity type being configured.</param>
+    /// <param name="entityTypeBuilder">The builder for the entity type being configured.</param>
     /// <param name="name">The name of the table.</param>
     /// <param name="schema">The schema of the table.</param>
     /// <param name="buildAction">An action that performs configuration of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
     public static EntityTypeBuilder SplitToTable(
-        this EntityTypeBuilder ownedNavigationBuilder,
+        this EntityTypeBuilder entityTypeBuilder,
         string name,
         string? schema,
         Action<SplitTableBuilder> buildAction)
@@ -382,11 +382,9 @@ public static class RelationalEntityTypeBuilderExtensions
         Check.NullButNotEmpty(schema, nameof(schema));
         Check.NotNull(buildAction, nameof(buildAction));
 
-        buildAction(new SplitTableBuilder(
-            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.Metadata, StoreObjectIdentifier.Table(name, schema)),
-            ownedNavigationBuilder));
+        buildAction(new SplitTableBuilder(StoreObjectIdentifier.Table(name, schema), entityTypeBuilder));
 
-        return ownedNavigationBuilder;
+        return entityTypeBuilder;
     }
 
     /// <summary>
@@ -413,9 +411,7 @@ public static class RelationalEntityTypeBuilderExtensions
         Check.NullButNotEmpty(schema, nameof(schema));
         Check.NotNull(buildAction, nameof(buildAction));
 
-        buildAction(new SplitTableBuilder<TEntity>(
-            RelationalEntityTypeOverrides.GetOrCreate(entityTypeBuilder.Metadata, StoreObjectIdentifier.Table(name, schema)),
-            entityTypeBuilder));
+        buildAction(new SplitTableBuilder<TEntity>(StoreObjectIdentifier.Table(name, schema), entityTypeBuilder));
 
         return entityTypeBuilder;
     }
@@ -673,8 +669,8 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <param name="name">The name of the table.</param>
     /// <param name="buildAction">An action that performs configuration of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static EntityTypeBuilder SplitToTable(
-        this EntityTypeBuilder ownedNavigationBuilder,
+    public static OwnedNavigationBuilder SplitToTable(
+        this OwnedNavigationBuilder ownedNavigationBuilder,
         string name,
         Action<OwnedNavigationSplitTableBuilder> buildAction)
         => ownedNavigationBuilder.SplitToTable(name, null, buildAction);
@@ -712,8 +708,8 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <param name="schema">The schema of the table.</param>
     /// <param name="buildAction">An action that performs configuration of the table.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static EntityTypeBuilder SplitToTable(
-        this EntityTypeBuilder ownedNavigationBuilder,
+    public static OwnedNavigationBuilder SplitToTable(
+        this OwnedNavigationBuilder ownedNavigationBuilder,
         string name,
         string? schema,
         Action<OwnedNavigationSplitTableBuilder> buildAction)
@@ -722,9 +718,7 @@ public static class RelationalEntityTypeBuilderExtensions
         Check.NullButNotEmpty(schema, nameof(schema));
         Check.NotNull(buildAction, nameof(buildAction));
 
-        buildAction(new SplitTableBuilder(
-            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.OwnedEntityType, StoreObjectIdentifier.Table(name, schema)),
-            ownedNavigationBuilder));
+        buildAction(new OwnedNavigationSplitTableBuilder(StoreObjectIdentifier.Table(name, schema), ownedNavigationBuilder));
 
         return ownedNavigationBuilder;
     }
@@ -755,9 +749,7 @@ public static class RelationalEntityTypeBuilderExtensions
         Check.NullButNotEmpty(schema, nameof(schema));
         Check.NotNull(buildAction, nameof(buildAction));
 
-        buildAction(new OwnedNavigationSplitTableBuilder<TDependentEntity>(
-            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.OwnedEntityType, StoreObjectIdentifier.Table(name, schema)),
-            ownedNavigationBuilder));
+        buildAction(new OwnedNavigationSplitTableBuilder<TDependentEntity>(StoreObjectIdentifier.Table(name, schema), ownedNavigationBuilder));
 
         return ownedNavigationBuilder;
     }
@@ -1062,9 +1054,7 @@ public static class RelationalEntityTypeBuilderExtensions
         Check.NullButNotEmpty(schema, nameof(schema));
         Check.NotNull(buildAction, nameof(buildAction));
 
-        buildAction(new SplitViewBuilder(
-            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.Metadata, StoreObjectIdentifier.View(name, schema)),
-            ownedNavigationBuilder));
+        buildAction(new SplitViewBuilder(StoreObjectIdentifier.View(name, schema), ownedNavigationBuilder));
 
         return ownedNavigationBuilder;
     }
@@ -1093,9 +1083,7 @@ public static class RelationalEntityTypeBuilderExtensions
         Check.NullButNotEmpty(schema, nameof(schema));
         Check.NotNull(buildAction, nameof(buildAction));
 
-        buildAction(new SplitViewBuilder<TEntity>(
-            RelationalEntityTypeOverrides.GetOrCreate(entityTypeBuilder.Metadata, StoreObjectIdentifier.View(name, schema)),
-            entityTypeBuilder));
+        buildAction(new SplitViewBuilder<TEntity>(StoreObjectIdentifier.View(name, schema), entityTypeBuilder));
 
         return entityTypeBuilder;
     }
@@ -1188,8 +1176,8 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <param name="name">The name of the view.</param>
     /// <param name="buildAction">An action that performs configuration of the view.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static EntityTypeBuilder SplitToView(
-        this EntityTypeBuilder ownedNavigationBuilder,
+    public static OwnedNavigationBuilder SplitToView(
+        this OwnedNavigationBuilder ownedNavigationBuilder,
         string name,
         Action<OwnedNavigationSplitViewBuilder> buildAction)
         => ownedNavigationBuilder.SplitToView(name, null, buildAction);
@@ -1227,8 +1215,8 @@ public static class RelationalEntityTypeBuilderExtensions
     /// <param name="schema">The schema of the view.</param>
     /// <param name="buildAction">An action that performs configuration of the view.</param>
     /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public static EntityTypeBuilder SplitToView(
-        this EntityTypeBuilder ownedNavigationBuilder,
+    public static OwnedNavigationBuilder SplitToView(
+        this OwnedNavigationBuilder ownedNavigationBuilder,
         string name,
         string? schema,
         Action<OwnedNavigationSplitViewBuilder> buildAction)
@@ -1237,9 +1225,7 @@ public static class RelationalEntityTypeBuilderExtensions
         Check.NullButNotEmpty(schema, nameof(schema));
         Check.NotNull(buildAction, nameof(buildAction));
 
-        buildAction(new SplitViewBuilder(
-            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.OwnedEntityType, StoreObjectIdentifier.View(name, schema)),
-            ownedNavigationBuilder));
+        buildAction(new OwnedNavigationSplitViewBuilder(StoreObjectIdentifier.View(name, schema), ownedNavigationBuilder));
 
         return ownedNavigationBuilder;
     }
@@ -1271,8 +1257,7 @@ public static class RelationalEntityTypeBuilderExtensions
         Check.NotNull(buildAction, nameof(buildAction));
 
         buildAction(new OwnedNavigationSplitViewBuilder<TDependentEntity>(
-            RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.OwnedEntityType, StoreObjectIdentifier.View(name, schema)),
-            ownedNavigationBuilder));
+            StoreObjectIdentifier.View(name, schema), ownedNavigationBuilder));
 
         return ownedNavigationBuilder;
     }

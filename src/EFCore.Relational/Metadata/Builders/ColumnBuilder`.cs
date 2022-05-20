@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -9,9 +10,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Builders;
 ///     Instances of this class are returned from methods when using the <see cref="ModelBuilder" /> API
 ///     and it is not designed to be directly constructed in your application code.
 /// </summary>
-/// <typeparam name="TEntity">The entity type being configured.</typeparam>
-public class SplitTableBuilder<TEntity> : SplitTableBuilder
-    where TEntity : class
+public class ColumnBuilder<TProperty> : ColumnBuilder
 {
     /// <summary>
     ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
@@ -20,19 +19,8 @@ public class SplitTableBuilder<TEntity> : SplitTableBuilder
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
     [EntityFrameworkInternal]
-    public SplitTableBuilder(in StoreObjectIdentifier storeObject, EntityTypeBuilder entityTypeBuilder)
-        : base(storeObject, entityTypeBuilder)
+    public ColumnBuilder(in StoreObjectIdentifier storeObject, PropertyBuilder propertyBuilder)
+        : base(storeObject, propertyBuilder)
     {
     }
-
-    /// <summary>
-    ///     Configures the table to be ignored by migrations.
-    /// </summary>
-    /// <remarks>
-    ///     See <see href="https://aka.ms/efcore-docs-migrations">Database migrations</see> for more information and examples.
-    /// </remarks>
-    /// <param name="excluded">A value indicating whether the table should be managed by migrations.</param>
-    /// <returns>The same builder instance so that multiple calls can be chained.</returns>
-    public new virtual SplitTableBuilder<TEntity> ExcludeFromMigrations(bool excluded = true)
-        => (SplitTableBuilder<TEntity>)base.ExcludeFromMigrations(excluded);
 }

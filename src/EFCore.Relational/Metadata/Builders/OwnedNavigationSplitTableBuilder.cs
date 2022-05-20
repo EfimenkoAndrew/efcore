@@ -19,14 +19,12 @@ public class OwnedNavigationSplitTableBuilder
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
     [EntityFrameworkInternal]
-    public OwnedNavigationSplitTableBuilder(IRelationalEntityTypeOverrides overrides, OwnedNavigationBuilder ownedNavigationBuilder)
+    public OwnedNavigationSplitTableBuilder(in StoreObjectIdentifier storeObject, OwnedNavigationBuilder ownedNavigationBuilder)
     {
-        Check.DebugAssert(overrides.StoreObject.StoreObjectType == StoreObjectType.Table,
-            "StoreObjectType should be Table, not " + overrides.StoreObject.StoreObjectType);
-        Check.DebugAssert(overrides.EntityType == ownedNavigationBuilder.Metadata,
-            "StoreObjectType should be Table, not " + overrides.StoreObject.StoreObjectType);
+        Check.DebugAssert(storeObject.StoreObjectType == StoreObjectType.Table,
+            "StoreObjectType should be Table, not " + storeObject.StoreObjectType);
 
-        Overrides = overrides;
+        Overrides = RelationalEntityTypeOverrides.GetOrCreate(ownedNavigationBuilder.OwnedEntityType, storeObject);
         OwnedNavigationBuilder = ownedNavigationBuilder;
     }
 

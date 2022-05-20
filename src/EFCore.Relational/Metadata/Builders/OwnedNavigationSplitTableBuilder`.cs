@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-
 namespace Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 /// <summary>
@@ -20,8 +18,8 @@ public class OwnedNavigationSplitTableBuilder<TEntity> : OwnedNavigationSplitTab
     ///     doing so can result in application failures when updating to a new Entity Framework Core release.
     /// </summary>
     [EntityFrameworkInternal]
-    public OwnedNavigationSplitTableBuilder(IRelationalEntityTypeOverrides overrides, OwnedNavigationBuilder ownedNavigationBuilder)
-        : base(overrides, ownedNavigationBuilder)
+    public OwnedNavigationSplitTableBuilder(in StoreObjectIdentifier storeObject, OwnedNavigationBuilder ownedNavigationBuilder)
+        : base(storeObject, ownedNavigationBuilder)
     {
     }
 
